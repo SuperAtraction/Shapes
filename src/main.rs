@@ -3,7 +3,7 @@ mod shapes;
 
 use shape::Shape;
 use shapes::*;
-use std::io;
+use std::io::{self, Write};
 
 fn total_area(shapes: &Vec<Box<dyn Shape>>) -> f64 {
     let mut total_area: f64 = 0.0;
@@ -17,20 +17,21 @@ fn add_shape(shapes: &mut Vec<Box<dyn Shape>>)  {
     println!();
     println!("=== Ajout de forme ===");
     println!("1. Carré; 2. Rectangle; 3. Cercle; 4. Triangle");
-    let shape_number: i32 = read_number() as i32;
+    let shape_number: i32 = read_number("Forme:") as i32;
+
     match shape_number {
         1 => {
             println!("Sélectionné: Carré. Veuillez taper la taille du côté");
-            let side: f64 = read_number();
+            let side: f64 = read_number("Taille du côté:");
             let square = Square::new(side);
             println!("{} ajouté", square.info());
             shapes.push(Box::new(square));
         },
         2 => {
-            println!("Sélectionné: Rectangle. Veuillez taper la longueur puis la largeur");
+            println!("Sélectionné: Rectangle");
 
-            let width = read_number();
-            let height = read_number();
+            let width = read_number("Longueur:");
+            let height = read_number("Largeur:");
 
             if width == height {
                 println!("Les valeurs sont identiques, création d'un carré");
@@ -45,17 +46,17 @@ fn add_shape(shapes: &mut Vec<Box<dyn Shape>>)  {
             }
         },
         3 => {
-            println!("Sélectionné: Cercle. Veuillez taper le rayon");
-            let radius: f64 = read_number();
+            println!("Sélectionné: Cercle");
+            let radius: f64 = read_number("Rayon:");
             let circle = Circle::new(radius);
             println!("{} ajouté", circle.info());
             shapes.push(Box::new(circle));
         },
         4 => {
-            println!("Sélectionné: Triangle. Veuillez taper la taille des trois côtés");
-            let side1 = read_number();
-            let side2 = read_number();
-            let side3 = read_number();
+            println!("Sélectionné: Triangle");
+            let side1 = read_number("Côté 1:");
+            let side2 = read_number("Côté 2:");
+            let side3 = read_number("Côté 3:");
             let triangle = Triangle::new(side1, side2, side3);
             println!("{} ajouté", triangle.info());
             shapes.push(Box::new(triangle));
@@ -86,9 +87,8 @@ fn get_shape_index(shapes: &Vec<Box<dyn Shape>>, shape_id: i32) -> usize {
 
 fn remove_shape(shapes: &mut Vec<Box<dyn Shape>>) {
     list_shapes(shapes);
-
-    println!("\nQuelle forme souhaitez-vous supprimer ? Tapez son identifiant :");
-    let shape_id = read_number() as i32;
+    println!("\nQuelle forme souhaitez-vous supprimer ?");
+    let shape_id = read_number("Tapez son identifiant:") as i32;
 
     let shape = shapes.remove(get_shape_index(&shapes, shape_id));
     println!("{}", shape.deleted_message());
@@ -97,14 +97,20 @@ fn remove_shape(shapes: &mut Vec<Box<dyn Shape>>) {
 fn calculate(shapes: &mut Vec<Box<dyn Shape>>) {
     println!("\nQue souhaitez vous calculer?");
     println!("1. Additionner des formes");
-    match read_number() as i32 {
+    match read_number("Sélection:") as i32 {
         1 => {
             list_shapes(shapes);
-            println!("Tapez le nombre de forme à additionner, puis leur IDs repectives, ligne par ligne");
-            let shape_number = read_number() as i32;
+            println!("Tapez le nombre de forme à additionner, puis leur IDs repectives, séparés par un espacec");
+            let shape_list = read_string("IDs des formes:");
             let mut total_area: f64 = 0.0;
-            for _ in 0..shape_number {
-                let shape_id = read_number() as i32;
+            for shape_id in shape_list.split_whitespace() {
+                let shape_id = match shape_id.parse() {
+                    Ok(val) => val,
+                    Err(e) => {
+                        println!("Erreur de parsing {e}");
+                        0
+                    }
+                };
                 let shape_index = get_shape_index(shapes, shape_id);
                 total_area += shapes[shape_index].area();
             }
@@ -119,7 +125,7 @@ fn main() {
     loop {
         println!("\n\nQue souhaitez vous faire ?");
         println!("1. Ajouter une forme; 2. Lister les formes; 3. Calculer l'aire totale; 4. Effectuer une opération; 5. Enlever une forme; 10. Quitter");
-        match read_number() as i32 {
+        match read_number("Sélection:") as i32 {
             1 => add_shape(&mut shapes),
             2 => list_shapes(&shapes),
             3 => println!("\nAire totale: {}", total_area(&shapes)),
@@ -133,8 +139,25 @@ fn main() {
     println!("Merci et à bientôt");
 }
 
-fn read_number() -> f64 {
+// TODO: Afficher une erreur visible au lieu de retourner 0
+fn read_number(prompt: &str) -> f64 {
+    print!("{prompt} ");
+    io::stdout().flush().unwrap();
     let mut input = String::new();
-    io::stdin().read_line(&mut input).unwrap_or(0);
-    input.trim().parse().unwrap_or(0.0)
+    io::stdin().read_line(&mut input).unwrap();
+    match input.trim().parse() {
+        Ok(val) => val,
+        Err(e) => {
+            println!("Erreur de lecture! {e}");
+            -1.1
+        },
+    }
+}
+
+fn read_string(prompt: &str) -> String {
+    print!("{prompt} ");
+    io::stdout().flush().unwrap();
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).unwrap();
+    input.trim().to_string()
 }
