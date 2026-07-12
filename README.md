@@ -1,3 +1,3 @@
 # shapes
 
-A description of this project.
+A weird shapes manager.
