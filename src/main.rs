@@ -57,9 +57,15 @@ fn add_shape(shapes: &mut Vec<Box<dyn Shape>>)  {
             let side1 = read_number("Côté 1:");
             let side2 = read_number("Côté 2:");
             let side3 = read_number("Côté 3:");
-            let triangle = Triangle::new(side1, side2, side3);
-            println!("{} ajouté", triangle.info());
-            shapes.push(Box::new(triangle));
+            match Triangle::new(side1, side2, side3) {
+                Ok(triangle) => {
+                    println!("{} ajouté", triangle.info());
+                    shapes.push(Box::new(triangle));
+                }
+                Err(error) => {
+                    println!("{error}");
+                }
+            }
         }
         _ => println!("Erreur de sélection"),
     }
@@ -76,47 +82,66 @@ fn list_shapes(shapes: &Vec<Box<dyn Shape>>) {
     }
 }
 
-fn get_shape_index(shapes: &Vec<Box<dyn Shape>>, shape_id: i32) -> i32 {
-    if let Some(index) = shapes.iter().position(|shape| shape.id() == shape_id) {
-        return index as i32;
-    } else {
-        println!("Aucune forme avec cet identifiant.");
-        return -1;
+fn get_shape_index(shapes: &[Box<dyn Shape>], shape_id: i32) -> Option<usize> {
+    let index = shapes.iter().position(|shape| shape.id() == shape_id);
+
+    if index.is_none() {
+        println!("Aucune forme avec l'identifiant {shape_id}.");
     }
+    index
 }
 
 fn remove_shape(shapes: &mut Vec<Box<dyn Shape>>) {
     list_shapes(shapes);
     println!("\nQuelle forme souhaitez-vous supprimer ?");
     let shape_id = read_number("Tapez son identifiant:") as i32;
-    let shape_index = get_shape_index(&shapes, shape_id);
-    if shape_index != -1 {
-        let shape = shapes.remove(shape_index as usize);
+    if let Some(index) = get_shape_index(shapes, shape_id) {
+        let shape = shapes.remove(index);
         println!("{}", shape.deleted_message());
     }
 }
 
 fn calculate(shapes: &mut Vec<Box<dyn Shape>>) {
     println!("\nQue souhaitez vous calculer?");
-    println!("1. Additionner des formes");
+    println!("1. Additionner des formes 2. Calculer le périmètre");
     match read_number("Sélection:") as i32 {
         1 => {
             list_shapes(shapes);
-            println!("Tapez le nombre de forme à additionner, puis leur IDs repectives, séparés par un espace");
+            println!("\nTapez les IDs repectives des formes à additionner, séparés par un espace");
             let shape_list = read_string("IDs des formes:");
             let mut total_area: f64 = 0.0;
             for shape_id in shape_list.split_whitespace() {
                 let shape_id = match shape_id.parse() {
                     Ok(val) => val,
                     Err(e) => {
-                        println!("Erreur de parsing {e}");
-                        0
+                        println!("Erreur de parsing: {e}");
+                        continue;
                     }
                 };
-                let shape_index = get_shape_index(shapes, shape_id);
-                total_area += shapes[shape_index as usize].area();
+                if let Some(index) = get_shape_index(shapes, shape_id) {
+                    total_area += shapes[index].area();
+                }
             }
             println!("Aire des formes: {}", total_area);
+        },
+        2 => {
+            list_shapes(shapes);
+            println!();
+            let shape_list = read_string("Tapez le/les IDs de la/des forme(s):");
+            let mut total_perimeter: f64 = 0.0;
+            for shape_id in shape_list.split_whitespace() {
+                let shape_id = match shape_id.parse() {
+                    Ok(val) => val,
+                    Err(e) => {
+                        println!("Erreur de parsing: {e}");
+                        continue;
+                    }
+                };
+                if let Some(index) = get_shape_index(shapes, shape_id) {
+                    total_perimeter += shapes[index].perimeter();
+                }
+            }
+            println!("Le périmètre total des formes est de: {total_perimeter}");
         },
         _ => println!("Erreur de sélection"),
     }

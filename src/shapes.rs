@@ -1,5 +1,6 @@
 use crate::shape::Shape;
 use std::sync::atomic::{AtomicI32, Ordering};
+use std::f64::consts::PI;
 
 // Pour les IDs
 static NEXT_ID: AtomicI32 = AtomicI32::new(1);
@@ -15,7 +16,7 @@ pub struct Circle {
 
 impl Shape for Circle {
     fn area(&self) -> f64 {
-        std::f64::consts::PI * self.radius * self.radius
+        PI * self.radius.powi(2)
     }
 
     fn info(&self) -> String {
@@ -24,6 +25,10 @@ impl Shape for Circle {
 
     fn id(&self) -> i32 {
         self.id
+    }
+
+    fn perimeter(&self) -> f64 {
+        2.0 * self.radius * PI
     }
 }
 
@@ -53,6 +58,10 @@ impl Shape for Square {
     fn id(&self) -> i32 {
         self.id
     }
+
+    fn perimeter(&self) -> f64 {
+        self.side * 4.0
+    }
 }
 
 impl Square {
@@ -76,11 +85,15 @@ impl Shape for Rectangle {
     }
 
     fn info(&self) -> String {
-        format!("Rectangle, avec une longueur de {} et une largeur de {}", self.width, self.height)
+        format!("Rectangle, avec une largeur de {} et une hauteur de {}", self.width, self.height)
     }
 
     fn id(&self) -> i32 {
         self.id
+    }
+
+    fn perimeter(&self) -> f64 {
+        2.0 * (self.width + self.height)
     }
 }
 
@@ -111,14 +124,17 @@ pub struct Triangle {
 }
 
 impl Triangle {
-    pub fn new(side1: f64, side2: f64, side3: f64) -> Self {
+    pub fn new(side1: f64, side2: f64, side3: f64) -> Result<Self, String> {
         // Vérification qu'un triangle est possible
-        assert!(
-            side1 + side2 > side3
-                && side1 + side3 > side2
-                && side2 + side3 > side1,
-            "Triangle impossible"
-        );
+        if !(side1 + side2 > side3
+            && side1 + side3 > side2
+            && side2 + side3 > side1)
+        {
+            return Err(
+                "Triangle impossible : la somme de deux côtés doit être supérieure au troisième."
+                    .to_string(),
+            );
+        }
 
         let mut sides = [side1, side2, side3];
         sides.sort_by(|a, b| a.partial_cmp(b).unwrap());
@@ -127,7 +143,7 @@ impl Triangle {
         let b = sides[1];
         let c = sides[2];
 
-        // Magie trouvée sur le web
+        // Magie noire
         let rectangle = (a * a + b * b - c * c).abs() < 1e-10;
         let equilateral = a == b && b == c;
         let isosceles = a == b || b == c || a == c;
@@ -144,13 +160,13 @@ impl Triangle {
             TriangleType::Scalene
         };
 
-        Self {
+        Ok(Self {
             side1,
             side2,
             side3,
             triangle_type,
             id: generate_id(),
-        }
+        })
     }
 }
 
@@ -180,5 +196,9 @@ impl Shape for Triangle {
 
     fn id(&self) -> i32 {
         self.id
+    }
+
+    fn perimeter(&self) -> f64 {
+        self.side1 + self.side2 + self.side3
     }
 }
