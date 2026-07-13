@@ -76,12 +76,12 @@ fn list_shapes(shapes: &Vec<Box<dyn Shape>>) {
     }
 }
 
-fn get_shape_index(shapes: &Vec<Box<dyn Shape>>, shape_id: i32) -> usize {
+fn get_shape_index(shapes: &Vec<Box<dyn Shape>>, shape_id: i32) -> i32 {
     if let Some(index) = shapes.iter().position(|shape| shape.id() == shape_id) {
-        return index;
+        return index as i32;
     } else {
         println!("Aucune forme avec cet identifiant.");
-        return 0;
+        return -1;
     }
 }
 
@@ -89,9 +89,11 @@ fn remove_shape(shapes: &mut Vec<Box<dyn Shape>>) {
     list_shapes(shapes);
     println!("\nQuelle forme souhaitez-vous supprimer ?");
     let shape_id = read_number("Tapez son identifiant:") as i32;
-
-    let shape = shapes.remove(get_shape_index(&shapes, shape_id));
-    println!("{}", shape.deleted_message());
+    let shape_index = get_shape_index(&shapes, shape_id);
+    if shape_index != -1 {
+        let shape = shapes.remove(shape_index as usize);
+        println!("{}", shape.deleted_message());
+    }
 }
 
 fn calculate(shapes: &mut Vec<Box<dyn Shape>>) {
@@ -100,7 +102,7 @@ fn calculate(shapes: &mut Vec<Box<dyn Shape>>) {
     match read_number("Sélection:") as i32 {
         1 => {
             list_shapes(shapes);
-            println!("Tapez le nombre de forme à additionner, puis leur IDs repectives, séparés par un espacec");
+            println!("Tapez le nombre de forme à additionner, puis leur IDs repectives, séparés par un espace");
             let shape_list = read_string("IDs des formes:");
             let mut total_area: f64 = 0.0;
             for shape_id in shape_list.split_whitespace() {
@@ -112,7 +114,7 @@ fn calculate(shapes: &mut Vec<Box<dyn Shape>>) {
                     }
                 };
                 let shape_index = get_shape_index(shapes, shape_id);
-                total_area += shapes[shape_index].area();
+                total_area += shapes[shape_index as usize].area();
             }
             println!("Aire des formes: {}", total_area);
         },
@@ -139,7 +141,6 @@ fn main() {
     println!("Merci et à bientôt");
 }
 
-// TODO: Afficher une erreur visible au lieu de retourner 0
 fn read_number(prompt: &str) -> f64 {
     print!("{prompt} ");
     io::stdout().flush().unwrap();
